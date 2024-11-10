@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rice Type Detection Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Rice Type Detection Result</h1>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/details">About</a></li>
+                <li><a href="/result">Result</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section>
+            <h2>Your Result</h2>
+            <p>Upload an image of rice to see the prediction result.</p>
+            <form action="/result" method="post" enctype="multipart/form-data">
+                <input type="file" name="image" accept="image/*" required>
+                <button type="submit">Upload and Predict</button>
+            </form>
+            {% if prediction_text %}
+            <div id="result">
+                <p><strong>Predicted Rice Type:</strong> {{ prediction_text }}</p>
+            </div>
+            {% endif %}
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2024 Rice Type Detection. All rights reserved.</p>
+    </footer>
+</body>
+</html>
+
