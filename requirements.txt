@@ -2,3 +2,4 @@ tensorflow==2.15.0
 waitress
 gunicorn
 flask==2.3.2
+gdown
