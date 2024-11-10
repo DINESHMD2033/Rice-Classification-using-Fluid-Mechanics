@@ -3,12 +3,30 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import os
+import gdown
 
 # Initialize Flask app
 app = Flask(__name__)
 
-# Load the trained model
+# Function to download model from Google Drive
+def download_model_from_drive(model_url, model_path):
+    try:
+        # Use gdown to download the model from the provided Google Drive link
+        gdown.download(model_url, model_path, quiet=False)
+    except Exception as e:
+        print(f"Error downloading the model: {e}")
+
+# Google Drive link to your model
+model_url = 'https://drive.google.com/uc?id=1Vgtrw1Lf7KfLO-sbB8Iytfiyz9J5DTRR'  # Use the file ID from your shared link
+
+# Path to save the downloaded model
 model_path = 'rice_type_classification_with_fluid_mechanics.h5'
+
+# Download model if it doesn't exist
+if not os.path.exists(model_path):
+    download_model_from_drive(model_url, model_path)
+
+# Load the trained model
 model = tf.keras.models.load_model(model_path)
 
 # Class mapping for predictions
