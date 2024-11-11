@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request
 import tensorflow as tf
 import numpy as np
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
@@ -17,7 +17,7 @@ def download_model_from_drive(model_url, model_path):
         print(f"Error downloading the model: {e}")
 
 # Google Drive link to your model
-model_url = 'https://drive.google.com/uc?id=1Vgtrw1Lf7KfLO-sbB8Iytfiyz9J5DTRR'  # Use the file ID from your shared link
+model_url = 'https://drive.google.com/uc?id=1Vgtrw1Lf7KfLO-sbB8Iytfiyz9J5DTRR'  # Replace with your file ID
 
 # Path to save the downloaded model
 model_path = 'rice_type_classification_with_fluid_mechanics.h5'
@@ -89,4 +89,4 @@ def index():
 
 # Run the Flask app
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
