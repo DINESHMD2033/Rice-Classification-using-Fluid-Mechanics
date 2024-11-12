@@ -4,6 +4,7 @@ import numpy as np
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import os
 import gdown
+import tempfile
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -33,9 +34,9 @@ model = tf.keras.models.load_model(model_path)
 class_mapping = {0: 'arborio', 1: 'basmati', 2: 'ipsala', 3: 'jasmine', 4: 'karacadag'}
 
 # Function to preprocess input image
-def preprocess_image(image):
+def preprocess_image(image_path):
     try:
-        img = load_img(image, target_size=(224, 224))  # Resize image to 224x224
+        img = load_img(image_path, target_size=(224, 224))  # Resize image to 224x224
         img_array = img_to_array(img) / 255.0  # Normalize image
         img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
         return img_array
@@ -54,30 +55,24 @@ def index():
             if not image:
                 return render_template('index.html', error="Please upload an image.")
 
-            # Save uploaded image temporarily
-            upload_folder = 'uploads'
-            if not os.path.exists(upload_folder):
-                os.makedirs(upload_folder)
+            # Use a temporary file to store the uploaded image
+            with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_image:
+                # Save the uploaded image to the temporary file
+                image.save(temp_image.name)
 
-            image_path = os.path.join(upload_folder, image.filename)
-            image.save(image_path)
+                # Preprocess the image
+                input_image = preprocess_image(temp_image.name)
 
-            # Preprocess the image
-            input_image = preprocess_image(image_path)
+                if input_image is None:
+                    return render_template('index.html', error="Failed to preprocess the image.")
 
-            if input_image is None:
-                return render_template('index.html', error="Failed to preprocess the image.")
+                # Prepare fluid behavior as input (reshape to match expected input)
+                fluid_behavior_input = np.array([[fluid_behavior]])
 
-            # Prepare fluid behavior as input (reshape to match expected input)
-            fluid_behavior_input = np.array([[fluid_behavior]])
-
-            # Predict using the model
-            prediction = model.predict([input_image, fluid_behavior_input])
-            predicted_class = np.argmax(prediction, axis=1)[0]
-            predicted_label = class_mapping[predicted_class]
-
-            # Clean up saved image
-            os.remove(image_path)
+                # Predict using the model
+                prediction = model.predict([input_image, fluid_behavior_input])
+                predicted_class = np.argmax(prediction, axis=1)[0]
+                predicted_label = class_mapping[predicted_class]
 
             return render_template('index.html', prediction=predicted_label)
 
