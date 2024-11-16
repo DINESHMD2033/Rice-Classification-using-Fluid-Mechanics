@@ -1,10 +1,10 @@
 from flask import Flask, render_template, request
 import tensorflow as tf
 import numpy as np
-from tensorflow.keras.preprocessing.image import load_img, img_to_array
-import os
+from tensorflow.keras.preprocessing.image import img_to_array
+from PIL import Image
 import gdown
-import tempfile
+import io
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -12,7 +12,6 @@ app = Flask(__name__)
 # Function to download model from Google Drive
 def download_model_from_drive(model_url, model_path):
     try:
-        # Use gdown to download the model from the provided Google Drive link
         gdown.download(model_url, model_path, quiet=False)
     except Exception as e:
         print(f"Error downloading the model: {e}")
@@ -34,9 +33,10 @@ model = tf.keras.models.load_model(model_path)
 class_mapping = {0: 'arborio', 1: 'basmati', 2: 'ipsala', 3: 'jasmine', 4: 'karacadag'}
 
 # Function to preprocess input image
-def preprocess_image(image_path):
+def preprocess_image(image_data):
     try:
-        img = load_img(image_path, target_size=(224, 224))  # Resize image to 224x224
+        img = Image.open(image_data).convert('RGB')  # Convert image to RGB
+        img = img.resize((224, 224))  # Resize image to 224x224
         img_array = img_to_array(img) / 255.0  # Normalize image
         img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
         return img_array
@@ -55,24 +55,19 @@ def index():
             if not image:
                 return render_template('index.html', error="Please upload an image.")
 
-            # Use a temporary file to store the uploaded image
-            with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_image:
-                # Save the uploaded image to the temporary file
-                image.save(temp_image.name)
+            # Read image directly into memory
+            input_image = preprocess_image(io.BytesIO(image.read()))
 
-                # Preprocess the image
-                input_image = preprocess_image(temp_image.name)
+            if input_image is None:
+                return render_template('index.html', error="Failed to preprocess the image.")
 
-                if input_image is None:
-                    return render_template('index.html', error="Failed to preprocess the image.")
+            # Prepare fluid behavior as input (reshape to match expected input)
+            fluid_behavior_input = np.array([[fluid_behavior]])
 
-                # Prepare fluid behavior as input (reshape to match expected input)
-                fluid_behavior_input = np.array([[fluid_behavior]])
-
-                # Predict using the model
-                prediction = model.predict([input_image, fluid_behavior_input])
-                predicted_class = np.argmax(prediction, axis=1)[0]
-                predicted_label = class_mapping[predicted_class]
+            # Predict using the model
+            prediction = model.predict([input_image, fluid_behavior_input])
+            predicted_class = np.argmax(prediction, axis=1)[0]
+            predicted_label = class_mapping[predicted_class]
 
             return render_template('index.html', prediction=predicted_label)
 
@@ -84,4 +79,5 @@ def index():
 
 # Run the Flask app
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True)
+
